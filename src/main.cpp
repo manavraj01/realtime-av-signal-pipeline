@@ -60,7 +60,13 @@ void die_on_error(int err, const char* what) {
 // a tightly packed planar YUV file regardless of decoder line stride.
 void write_frame_planes(std::FILE* out, AVFrame* frame) {
     const AVPixFmtDescriptor* desc = av_pix_fmt_desc_get(static_cast<AVPixelFormat>(frame->format));
-    for (int plane = 0; plane < desc->nb_components; ++plane) {
+    // desc->nb_components counts logical color components (Y, U, V), not
+    // physical planes. Semi-planar formats like NV12 pack U and V into
+    // one interleaved plane, so frame->data[2]/linesize[2] are null/0 —
+    // found by inspecting a decoded NV12 frame under gdb (data[2] == 0x0,
+    // linesize[2] == 0) after this loop originally assumed one physical
+    // plane per component and crashed on such formats.
+    for (int plane = 0; plane < desc->nb_components && frame->data[plane] && frame->linesize[plane]; ++plane) {
         int plane_height = frame->height;
         int plane_width_bytes = frame->width;
         if (plane == 1 || plane == 2) {
