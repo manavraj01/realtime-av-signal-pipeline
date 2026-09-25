@@ -1,0 +1,5 @@
+*.o
+*.exe
+av_pipeline
+testdata/*.yuv
+testdata/sample_nv12.mkv
